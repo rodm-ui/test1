@@ -1,22 +1,18 @@
 {
-  "name": "react-vite-tailwind",
-  "private": true,
-  "version": "0.0.0",
+  "name": "bloomery-flower-shop",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
     "start": "node server.js"
   },
   "dependencies": {
-    "clsx": "2.1.1",
-    "express": "^4.21.0",
-    "mysql2": "^3.11.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "tailwind-merge": "3.4.0"
-  },
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.1",
+    "pg": "^8.11.5"
+  }
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
     "@types/node": "22.19.17",

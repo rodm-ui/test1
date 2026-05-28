@@ -18,7 +18,6 @@ app.use(express.static(path.resolve(process.cwd(), 'dist')));
 // =========================================================================
 // 1. AIVEN MYSQL DATABASE CONFIGURATION
 // =========================================================================
-// Aiven MySQL connection URLs look like: mysql://user:pass@host:port/dbname
 const pool = mysql.createPool({
   uri: process.env.DATABASE_URL,
   waitForConnections: true,
@@ -55,11 +54,8 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    // Look up user strictly inside your live Aiven MySQL Database
-    // Note: MySQL uses '?' instead of '$1' for parameterized queries
     const [rows] = await pool.execute('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
 
-    // IF NOTHING IS FOUND IN THE DATABASE: Reject immediately
     if (rows.length === 0) {
       return res.status(401).json({ 
         success: false, 
@@ -69,7 +65,6 @@ app.post('/api/login', async (req, res) => {
 
     const user = rows[0];
 
-    // Verify password (supports plain text for your seeds, or secure bcrypt hashes)
     const isPasswordValid = password === user.password || await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -79,7 +74,6 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Success! Return user profile details extracted straight from your database
     return res.json({
       success: true,
       message: 'Login successful',
@@ -101,14 +95,61 @@ app.post('/api/login', async (req, res) => {
 });
 
 // =========================================================================
-// 3. WILDCARD FALLBACK ROUTE (Fixes Express 5 / path-to-regexp crash)
+// 3. DYNAMIC DASHBOARD USERS ROUTE (ADDED TO FIX YOUR DATA MISMATCH)
+// =========================================================================
+app.get('/api/users', async (req, res) => {
+  try {
+    // Pull ALL users directly out of your real Aiven Database tables
+    const [rows] = await pool.execute('SELECT id, name, email, role, created_at FROM users');
+    
+    return res.json({
+      success: true,
+      users: rows
+    });
+  } catch (error) {
+    console.error('Database error while fetching users:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server database error' 
+    });
+  }
+});
+
+// =========================================================================
+// 4. DYNAMIC PRODUCTS CATALOG ROUTE
+// =========================================================================
+app.get('/api/products', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM products');
+    return res.json({ success: true, products: rows });
+  } catch (error) {
+    console.error('Database error while fetching products:', error);
+    return res.status(500).json({ success: false, message: 'Database error' });
+  }
+});
+
+// =========================================================================
+// 5. DYNAMIC ORDERS ROUTE
+// =========================================================================
+app.get('/api/orders', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM orders');
+    return res.json({ success: true, orders: rows });
+  } catch (error) {
+    console.error('Database error while fetching orders:', error);
+    return res.status(500).json({ success: false, message: 'Database error' });
+  }
+});
+
+// =========================================================================
+// 6. WILDCARD FALLBACK ROUTE (Fixes Express 5 / path-to-regexp crash)
 // =========================================================================
 app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve(process.cwd(), 'dist/index.html'));
 });
 
 // =========================================================================
-// 4. SERVER EXECUTION
+// 7. SERVER EXECUTION
 // =========================================================================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
